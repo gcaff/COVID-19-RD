@@ -14,6 +14,30 @@
   library(plotly)
   library(latex2exp)
   
+  
+calc_R0 <- function(df){
+  #browser()
+  I <- df$I
+  dI <- df$dI
+  l <- nrow(df)
+  
+  ind <- (dI != 0) & !is.na(dI)
+  ind2 <- c(ind[2:l],FALSE)
+  R0_1 <- cummean(dI[ind]/I[ind2])
+  
+  R0 <- numeric(0)
+  R0[ind] <- R0_1
+  for (i in (1:l)){
+    if (i!=1){
+      if (i %in% (1:l)[!ind]){
+        #browser()
+        R0[i] <-  R0[i-1]
+      }
+    }
+  }
+  R0
+}  
+
 model_sim_covid <- function(nrep,n,H,num_ca,tau=0.5){
 
   ############## Parámetros de la simulación ##############
@@ -261,14 +285,17 @@ model_sim_covid <- function(nrep,n,H,num_ca,tau=0.5){
     })
     dplyr::bind_rows(dats)
   }
-  
+  #browser()
   # convertir en data frame para hacer gráfico
   df <- data.frame(t=1:nper,S,I,R,D)
   
   # tomar última hora del día para graficar
-  df <- df[(H*(1:dias))+1 %in% df$t,]
-  df$t <- 1:dias
+  #df <- df[c(1,(H*(1:dias))+1) %in% df$t,]
+  df <- df[df$t %in% c(1,(H*(1:dias))+1),]
+  df$t <- 0:dias
   
+  df$dI <- c(NA,df$I[2:nrow(df)]-df$I[1:(nrow(df)-1)])
+  df$R0 <- calc_R0(df)
   
   df
 }
@@ -309,6 +336,24 @@ model_sim_covid_plot <- function(df, legend = T, title = F, x.axis = F, y.axis =
   } else {
     p1 <- p1 + ylab("")
   }
+  
+  p1
+}
+
+
+plot_R0 <- function(df_R0,leyenda_labs,tau=0.5){
+  
+  p1 <- df_R0 %>%
+    gather(key=key,value=R0,-t) %>%
+    ggplot(aes(x=t,y=R0,color=key)) +
+    geom_line(alpha=0.6) +
+    theme_minimal() +
+    ylim(c(0,5)) +
+    ggtitle(TeX(paste0("Evolución de $R_0$, $\\tau =$",tau))) +
+    xlab("Núm. dias desde 1er caso") + ylab("R0") +
+    scale_color_discrete(name="",
+                        breaks=c("df1", "df2", "df3"),
+                        labels=leyenda_labs)
   
   p1
 }
