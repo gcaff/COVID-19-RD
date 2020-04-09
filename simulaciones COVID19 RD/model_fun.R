@@ -38,6 +38,15 @@ calc_R0 <- function(df){
   R0
 }  
 
+# contar numero de personas SIR dist
+count_n_SIR <- function(sir_dist){
+  S <- colSums(sir_dist == 1)
+  I <- colSums(sir_dist == 2)
+  R <- colSums(sir_dist == 3)
+  D <- colSums(sir_dist == 4)
+  data.frame(S,I,R,D)
+}
+
 model_sim_covid <- function(nrep,n,H,num_ca,tau=0.5){
 
   ############## Parámetros de la simulación ##############
@@ -105,15 +114,6 @@ model_sim_covid <- function(nrep,n,H,num_ca,tau=0.5){
   
   # distribucion de las personas infectadas
   sir_dist[1:n_i,1] <- 2 # asignar a las primeras n_i personas como infectadas
-  
-  # contar numero de personas SIR dist
-  count_n_SIR <- function(sir_dist){
-    S <- colSums(sir_dist == 1)
-    I <- colSums(sir_dist == 2)
-    R <- colSums(sir_dist == 3)
-    D <- colSums(sir_dist == 4)
-    data.frame(S,I,R,D)
-  }
   
   # numero de horas en centro de acopio
   h_ca <- numeric(n)
@@ -272,20 +272,6 @@ model_sim_covid <- function(nrep,n,H,num_ca,tau=0.5){
   
   #rm(l_res)
   
-  #plot(1:nper,I,type="l")
-  #plot(1:nper,I,type="l",ylim=c(0,n))
-  #lines(1:nper,S)
-  #lines(1:nper,R)
-  
-  accumulate_by <- function(dat, var) {
-    var <- lazyeval::f_eval(var, dat)
-    lvls <- plotly:::getLevels(var)
-    dats <- lapply(seq_along(lvls), function(x) {
-      cbind(dat[var %in% lvls[seq(1, x)], ], frame = lvls[[x]])
-    })
-    dplyr::bind_rows(dats)
-  }
-  #browser()
   # convertir en data frame para hacer gráfico
   df <- data.frame(t=1:nper,S,I,R,D)
   
